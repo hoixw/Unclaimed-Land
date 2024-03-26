@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Unclaimed Land</title>
+    <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-alpine.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+    <style>
+        .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+            max-width: 1500px;
+            margin: auto;
+        }
+
+        .text-content {
+            padding: 2rem 0;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100">
+    <div class="container">
+        <h1 class="text-4xl font-bold text-left mt-5">Unclaimed Land</h1>
+        <p class="text-left text-content">
+            This website provides Council-by-Council representations of unclaimed land in the UK. Each map is essentially a "negative" of registered land in the UK. 
+            Unfortunately, most unregistered land in the UK is largely roads, however, the land which is not may be claimable through Adverse Possession. 
+        </p>
+        <h1 class="text-2xl font-bold text-left mt-2 mb-3">England and Wales</h1>
+        <div id="myGrid" class="ag-theme-alpine"></div>
+    </div>
+
+    <script>
+        class MapLinkButtonComponent {
+            init(params) {
+                this.eGui = document.createElement("div");
+                this.eGui.className = "h-0.5";
+                let eButton = document.createElement("button");
+                this.eGui.appendChild(eButton);
+                eButton.className = "bg-transparent hover:bg-black text-black-700 hover:text-white px-4 border border-black-500 hover:border-transparent rounded";
+                // eButton.style.boxSizing = 'border-box';
+                eButton.innerText = "View Map";
+                this.eventListener = () => window.open(`map.html?file=${params.value}`, "_self");
+                eButton.addEventListener("click", this.eventListener);
+            }
+
+        
+            getGui() {
+                return this.eGui;
+            }
+        
+            refresh(params) {
+                return false;
+            }
+        
+            destroy() {
+                if (this.eButton) {
+                    this.eButton.removeEventListener("click", this.eventListener);
+                }
+            }
+        }
+        const filterParams = {
+            filterOptions: ["contains"],
+            defaultOption: "contains",
+            suppressAndOrCondition: true
+        };
+
+        const columnDefs = [{
+                field: 'Number',
+                filter: 'agNumberColumnFilter',
+                filterParams: filterParams,
+                sortable: true,
+                flex: 2
+            },
+            {
+                field: 'Council',
+                filter: 'agTextColumnFilter',
+                filterParams: filterParams,
+                sortable: true,
+                flex: 8
+            },
+            {
+                field: 'County',
+                filter: 'agTextColumnFilter',
+                filterParams: filterParams,
+                sortable: true,
+                flex: 5
+            },
+            {
+                headerName: 'Map Link',
+                field: 'Number',
+                cellRenderer: MapLinkButtonComponent,
+                flex: 2,
+                sortable: false,
+                filter: false
+            }
+        ];
+
+        // Grid Options
+        const gridOptions = {
+            columnDefs: columnDefs,
+            pagination: true,
+            paginationPageSize: 20,
+            defaultColDef: {
+                flex: 1,
+                filter: true,
+                resizable: true,
+            },
+            domLayout: "autoHeight"
+        };
+
+        // Setup the grid after the page has finished loading
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridDiv = document.querySelector('#myGrid');
+            new agGrid.Grid(gridDiv, gridOptions);
+            fetch('areas.json')
+                .then(response => response.json())
+                .then(data => {
+                    gridOptions.api.setRowData(data);
+                });
+        });
+    </script>
+</body>
+
+</html>

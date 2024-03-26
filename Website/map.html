@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>A basic map with Leaflet</title>
+
+  <!--add Leaflet CSS-->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.EasyButton/2.4.0/easy-button.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+  <!--our own style rules-->
+  <style type="text/css">
+    body,
+    html {
+      height: 100%;
+    }
+
+    #map-container {
+      height: 99%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map-container"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/topojson@3.0.2/dist/topojson.min.js"></script>
+  <script src="https://unpkg.com/leaflet.glify-polygons-fixed@3.3.1/dist/glify-browser.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.EasyButton/2.4.0/easy-button.js"></script>
+
+  <!--our own code to create the map-->
+  <script>
+    // Function to get and parse topoJSON from URL
+    async function getGeoData(url) {
+      let response = await fetch(url);
+      let data = await response.json();
+      return data;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+      function getURLParameter(name) {
+        return new URLSearchParams(window.location.search).get(name);
+      }
+      let fileNumber = getURLParameter('file') || '9'; // Default to '9'
+      let topojsonURL = `/assets/${fileNumber}.topojson`;
+
+      const cartoDBAttrib = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>';
+      const StadiaAttrib = '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+      var cartoDBLight = L.tileLayer("https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png", { attribution: cartoDBAttrib });
+      var cartoDBVoyager = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { attribution: cartoDBAttrib, subdomains: 'abcd' });
+      var StadiaAlidadeSmooth = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', { attribution: StadiaAttrib });
+      var StadiaAlidadeSmoothDark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', { attribution: StadiaAttrib });
+      var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'});
+
+      var baseLayers = {
+        "CartoDB Voyager": cartoDBVoyager,
+        "CartoDB Light": cartoDBLight,
+        "Stadia Alidade Smooth (Light)": StadiaAlidadeSmooth,
+        "Stadia Alidade Smooth (Dark)": StadiaAlidadeSmoothDark,
+        "Esri World Imagery (satellite)": Esri_WorldImagery,
+      };
+
+      let map = L.map('map-container', { layers: [cartoDBVoyager], minZoom: 7, maxZoom: 18 }).setView([54.00366, -2.547855], 7);
+      L.control.layers(baseLayers).addTo(map);
+
+      L.easyButton('fa-home', function (btn, map) {
+        window.location.href = '/';
+      }, 'Back to homepage').addTo(map);
+
+      L.easyButton('fa-download', function (btn, map) {
+        let a = document.createElement('a');
+        a.href = topojsonURL;
+        a.setAttribute('download', ''); // Set download attribute to prompt download
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, 'Download the .topojson file').addTo(map);
+
+      L.control.scale().addTo(map);
+
+      //fetch the topoJSON and add it to our GeoJSON layer
+      getGeoData(topojsonURL).then(data => {
+        for (key in data.objects) {
+          var geoJson = topojson.feature(data, data.objects[key]);
+          //L.geoJSON(geoJson).addTo(map);
+          L.glify.shapes({
+            map,
+            data: geoJson,
+            color: () => {
+              return {
+                r: 0.8,
+                g: 0,
+                b: 0,
+                a: 0.5
+              };
+            },
+            border: true,
+          });
+          map.fitBounds(L.geoJSON(geoJson).getBounds());
+        };
+      });
+    });
+  </script>
+</body>
+
+</html>
